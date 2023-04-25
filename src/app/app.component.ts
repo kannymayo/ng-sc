@@ -17,45 +17,35 @@ import { Component } from '@angular/core';
     </div>
 
     <div
-      class="flex flex-col max-w-screen-md mx-auto items-center my-28"
+      class="max-w-screen-md mx-auto items-center my-28 overflow-auto"
       role="main"
     >
       <!-- Next Steps -->
       <h2>Next Steps</h2>
       <p>What do you want to do next with your app?</p>
 
-      <div class="my-4 flex flex-wrap justify-center gap-4">
-        <button
-          *ngFor="let guide of guides; index as i"
-          class="shadow-lg hover:shadow-black/30 duration-300 transition-all px-4 py-8 rounded-md"
-          (click)="selectedGuide = i"
-          [ngClass]="{
-            'text-white bg-blue-600 ': selectedGuide === i,
-            'bg-slate-200 ': selectedGuide !== i
-          }"
-          tabindex="0"
+      <mat-tab-group animationDuration="0ms">
+        <mat-tab
+          *ngFor="let guide of guides"
+          labelClass="!px-4 !h-8 capitalize"
         >
-          +
-          <span>{{ guide.title }}</span>
-        </button>
-      </div>
-
-      <!-- Terminal -->
-      <div
-        class="relative w-[80%] max-w-[600px] rounded-md pt-12 mt-2 bg-black overflow-y-hidden text-white p-4"
-        [ngSwitch]="selectedGuide"
-      >
-        <!-- Console Top Bar -->
-        <div
-          class="absolute top-0 left-0 bg-slate-600 w-full text-3xl px-4 tracking-widest leading-6 pb-1 box-border"
-        >
-          &bull;&bull;&bull;
-        </div>
-        <!-- Console Body -->
-        <ng-container *ngFor="let guide of guides; index as i">
-          <pre *ngSwitchCase="i">{{ guide.command }}</pre>
-        </ng-container>
-      </div>
+          <ng-template mat-tab-label>
+            <span>{{ guide.title }}</span>
+          </ng-template>
+          <!-- Terminal -->
+          <div
+            class="relative  rounded-md pt-12 mt-2 bg-black overflow-y-hidden text-white p-4"
+          >
+            <!-- Console Top Bar -->
+            <div
+              class="absolute top-0 left-0 bg-slate-600 w-full text-3xl px-4 tracking-widest leading-6 pb-1 box-border"
+            >
+              &bull;&bull;&bull;
+            </div>
+            {{ guide.command }}
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
     <router-outlet></router-outlet>
   `,
@@ -88,5 +78,4 @@ export class AppComponent {
       command: 'ng build',
     },
   ];
-  selectedGuide = 0;
 }
