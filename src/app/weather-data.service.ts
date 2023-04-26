@@ -76,7 +76,7 @@ export class WeatherDataService {
     this.addDataset({ name, interval });
     return this.store$.pipe(
       map((data) => {
-        return [data?.[interval]?.[name], data?.[interval]?.time];
+        return [data?.[interval]?.[name], data?.[interval]?.time] as const;
       })
     );
   }
