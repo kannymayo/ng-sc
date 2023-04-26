@@ -8,6 +8,8 @@ import {
   filter,
   shareReplay,
   debounceTime,
+  share,
+  tap,
 } from 'rxjs/operators';
 import { Observable, ReplaySubject } from 'rxjs';
 
@@ -78,6 +80,9 @@ export class WeatherDataService {
       map((data) => {
         return [data?.[interval]?.[name], data?.[interval]?.time];
       })
+      // tap((data) => console.log('pre source: ', data)),
+      // distinct((data: any) => data?.generationtime_ms),
+      // tap((data) => console.log('post source: ', data))
     );
   }
 }
