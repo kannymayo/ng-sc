@@ -78,6 +78,6 @@ export class WeatherDataService {
       map((data) => {
         return [data?.[interval]?.[name], data?.[interval]?.time];
       })
-    );
+    ) as Observable<string[][]>;
   }
 }
