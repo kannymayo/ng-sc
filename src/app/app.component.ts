@@ -1,7 +1,7 @@
 import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { EChartsOption } from 'echarts';
 import { WeatherDataService, DatasetType } from './weather-data.service';
-import { FormGroup, FormControl } from '@angular/forms';
 
 @Pipe({ name: 'toChartData' })
 export class ToChartDataPipe implements PipeTransform {
@@ -59,20 +59,23 @@ export class ToChartDataPipe implements PipeTransform {
     </div>
 
     <div
-      class="from-teal-700 to-indigo-500 h-full bg-gradient-to-tl pt-16 custom-grid w-full grid relative"
+      class="from-teal-700 to-indigo-500 h-full bg-gradient-to-br pt-16 custom-grid w-full grid relative"
     >
       <!-- Side Panel Controls -->
       <aside
         class="bg-slate-100/50 z-10 sm:z-0 sm:static absolute left-0 right-0 bottom-0 h-48 sm:h-auto px-1 py-4 overflow-x-hidden overflow-y-auto xl:px-4"
       >
-        <form class="sm:flex-col flex-wrap flex sm:flex-nowrap gap-y-2">
+        <form
+          [formGroup]="form"
+          class="sm:flex-col flex-wrap flex sm:flex-nowrap gap-y-2"
+        >
           <!-- Chart Name -->
           <mat-form-field class="w-full">
             <mat-label>Chart Name</mat-label>
             <input
               matInput
               placeholder="Ex. Pizza"
-              [(ngModel)]="charts[selectedIndex].displayName"
+              formControlName="chartName"
               name="chartName"
             />
           </mat-form-field>
@@ -80,7 +83,7 @@ export class ToChartDataPipe implements PipeTransform {
           <!-- Dataset -->
           <mat-form-field class="w-full" appearance="fill">
             <mat-label>Dataset</mat-label>
-            <mat-select [(ngModel)]="seletedDatasetName" name="datasetName">
+            <mat-select formControlName="datasetName" name="datasetName">
               <mat-option
                 *ngFor="let dsName of datasetNames"
                 [value]="dsName.value"
@@ -93,7 +96,7 @@ export class ToChartDataPipe implements PipeTransform {
           <!--  -->
           <mat-form-field class="w-full" appearance="fill">
             <mat-label>Chart Type</mat-label>
-            <mat-select [(ngModel)]="selectedChartType" name="chartType">
+            <mat-select formControlName="chartType" name="chartType">
               <mat-option *ngFor="let ct of chartTypes" [value]="ct.value">
                 {{ ct.viewValue }}
               </mat-option>
@@ -103,7 +106,11 @@ export class ToChartDataPipe implements PipeTransform {
           <!-- Date Range -->
           <mat-form-field class="w-full" appearance="fill">
             <mat-label>Enter a date range</mat-label>
-            <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+            <mat-date-range-input
+              formGroupName="dateRange"
+              [rangePicker]="picker"
+            >
+              <!-- Inputs for range start & end -->
               <input
                 matStartDate
                 formControlName="start"
@@ -112,17 +119,29 @@ export class ToChartDataPipe implements PipeTransform {
               <input matEndDate formControlName="end" placeholder="End date" />
             </mat-date-range-input>
             <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+
+            <!-- Picker -->
             <mat-datepicker-toggle
               matIconSuffix
               [for]="picker"
             ></mat-datepicker-toggle>
             <mat-date-range-picker #picker></mat-date-range-picker>
 
+            <!-- Error -->
             <mat-error
-              *ngIf="range.controls.start.hasError('matStartDateInvalid')"
+              *ngIf="
+                form.controls['dateRange']
+                  .get('start')
+                  ?.hasError('matStartDateInvalid')
+              "
               >Invalid start date</mat-error
             >
-            <mat-error *ngIf="range.controls.end.hasError('matEndDateInvalid')"
+            <mat-error
+              *ngIf="
+                form.controls['dateRange']
+                  .get('end')
+                  ?.hasError('matEndDateInvalid')
+              "
               >Invalid end date</mat-error
             >
           </mat-form-field>
@@ -131,7 +150,7 @@ export class ToChartDataPipe implements PipeTransform {
           <div class="flex flex-wrap gap-1 items-center justify-between">
             <span class="text-base py-1">Granularity:</span>
             <mat-button-toggle-group
-              [(ngModel)]="selectedGranularity"
+              formControlName="granularity"
               name="granularity"
             >
               <mat-button-toggle
@@ -144,10 +163,10 @@ export class ToChartDataPipe implements PipeTransform {
         </form>
       </aside>
 
-      <main class=" relative">
+      <main class="relative">
         <!-- Floated Tab Content -->
         <div
-          class="absolute inset-0 lg:inset-4 xl:left-16 xl:right-16 transition-all duration-300 delay-200 lg:rounded-sm bg-white grid custom-grid-verticle mb-48 sm:mb-0 overflow-hidden"
+          class="absolute inset-0 lg:inset-3 xl:left-10 xl:right-10 transition-all duration-300 delay-200 lg:rounded-sm bg-white grid custom-grid-verticle mb-48 sm:mb-0 overflow-hidden"
         >
           <!-- Header -->
           <div
@@ -155,7 +174,7 @@ export class ToChartDataPipe implements PipeTransform {
           >
             <div class="flex gap-2 truncate items-center ml-4">
               <span class="text-xl">{{
-                charts[selectedIndex].displayName
+                form.controls['chartName'].value
               }}</span>
               <mat-chip-listbox>
                 <mat-chip class="capitalize">
@@ -212,15 +231,20 @@ export class ToChartDataPipe implements PipeTransform {
 export class AppComponent implements OnInit {
   selectedIndex = 0;
   charts: any = [];
-
-  range = new FormGroup({
-    start: new FormControl<Date | null>(null),
-    end: new FormControl<Date | null>(null),
+  form: FormGroup = this.fb.group({
+    chartName: ['', Validators.required],
+    datasetName: ['', Validators.required],
+    chartType: ['', Validators.required],
+    granularity: ['', Validators.required],
+    dateRange: this.fb.group({
+      start: [null, Validators.required],
+      end: [null, Validators.required],
+    }),
   });
 
   seletedDatasetName = null;
   datasetNames = [
-    { value: 'relativehumidity_2m', viewValue: 'Rel. Humidity' },
+    { value: 'relativehumidity_2m', viewValue: 'Relative Humidity' },
     { value: 'temperature_2m_max', viewValue: 'Max Temperature' },
     { value: 'temperature_2m_min', viewValue: 'Min Temperature' },
     { value: 'direct_radiation', viewValue: 'Direct Radiation' },
@@ -260,7 +284,10 @@ export class AppComponent implements OnInit {
     },
   };
 
-  constructor(private weatherDataService: WeatherDataService) {}
+  constructor(
+    private weatherDataService: WeatherDataService,
+    private fb: FormBuilder
+  ) {}
 
   ngOnInit() {
     this.addChart('Relative Humidity', 'relativehumidity_2m', 'hourly');
@@ -282,11 +309,20 @@ export class AppComponent implements OnInit {
         interval,
       }),
     });
-    this.selectedIndex = this.charts.length - 1;
+    this.selectChart(this.charts.length - 1);
+  }
+
+  selectChart(index: number) {
+    this.selectedIndex = index;
+    this.form.patchValue({
+      chartName: this.charts[index].displayName,
+      datasetName: this.charts[index].dataset.name,
+      granularity: this.charts[index].dataset.interval,
+    });
   }
 
   deleteChart(index: number) {
-    this.selectedIndex = this.selectedIndex === 0 ? 0 : this.selectedIndex - 1;
     this.charts.splice(index, 1);
+    this.selectChart(this.selectedIndex === 0 ? 0 : this.selectedIndex - 1);
   }
 }
