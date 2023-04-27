@@ -1,6 +1,7 @@
 import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { EChartsOption } from 'echarts';
 import { WeatherDataService, DatasetType } from './weather-data.service';
+import { FormGroup, FormControl } from '@angular/forms';
 
 @Pipe({ name: 'toChartData' })
 export class ToChartDataPipe implements PipeTransform {
@@ -37,7 +38,7 @@ export class ToChartDataPipe implements PipeTransform {
         [(selectedIndex)]="selectedIndex"
       >
         <mat-tab
-          labelClass="!h-16"
+          labelClass="!h-16 select-none"
           *ngFor="let chart of charts"
           [label]="chart.displayName"
         ></mat-tab>
@@ -47,9 +48,9 @@ export class ToChartDataPipe implements PipeTransform {
           mat-stroked-button
           color="primary"
           class="bg-white text-black"
-          (click)="addChart('temperature_2m_max', 'daily')"
+          (click)="addChart('Max Temperature', 'temperature_2m_max', 'daily')"
         >
-          Plus
+          New
         </button>
       </div>
     </div>
@@ -59,18 +60,65 @@ export class ToChartDataPipe implements PipeTransform {
     >
       <!-- Side Panel Controls -->
       <aside
-        class="bg-slate-100/50 z-10 sm:z-0 grid sm:block sm:static absolute left-0 right-0 bottom-0 h-32 sm:h-auto px-1 py-4"
+        class="bg-slate-100/50 z-10 sm:z-0 flex sm:flex-col flex-wrap sm:flex-nowrap gap-y-4 sm:static absolute left-0 right-0 bottom-0 h-48 sm:h-auto px-1 py-4 overflow-x-hidden overflow-y-auto xl:px-4"
       >
-        Side
+        <!-- Chart Name -->
+        <mat-form-field class="w-full">
+          <mat-label>Chart Name</mat-label>
+          <input
+            matInput
+            placeholder="Ex. Pizza"
+            [(ngModel)]="charts[selectedIndex].displayName"
+          />
+        </mat-form-field>
+
+        <!-- Date Range -->
+        <mat-form-field class="w-full" appearance="fill">
+          <mat-label>Enter a date range</mat-label>
+          <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+            <input
+              matStartDate
+              formControlName="start"
+              placeholder="Start date"
+            />
+            <input matEndDate formControlName="end" placeholder="End date" />
+          </mat-date-range-input>
+          <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+          <mat-datepicker-toggle
+            matIconSuffix
+            [for]="picker"
+          ></mat-datepicker-toggle>
+          <mat-date-range-picker #picker></mat-date-range-picker>
+
+          <mat-error
+            *ngIf="range.controls.start.hasError('matStartDateInvalid')"
+            >Invalid start date</mat-error
+          >
+          <mat-error *ngIf="range.controls.end.hasError('matEndDateInvalid')"
+            >Invalid end date</mat-error
+          >
+        </mat-form-field>
+
+        <p>Selected range: {{ range.value | json }}</p>
+
+        <!-- Data Granularity -->
+        <div class="flex flex-wrap gap-1 items-center justify-between">
+          <span class="text-base py-1">Granularity:</span>
+          <mat-button-toggle-group class=" " name="fontStyle">
+            <mat-button-toggle value="bold">Day</mat-button-toggle>
+            <mat-button-toggle value="italic">Hour</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
       </aside>
 
       <main class=" relative">
-        <!-- Floated Section -->
+        <!-- Floated Tab Content -->
         <div
-          class="absolute inset-0 lg:inset-4 xl:left-16 xl:right-16 transition-all duration-300 delay-200 lg:rounded-sm bg-white grid custom-grid-verticle mb-32 sm:mb-0"
+          class="absolute inset-0 lg:inset-4 xl:left-16 xl:right-16 transition-all duration-300 delay-200 lg:rounded-sm bg-white grid custom-grid-verticle mb-48 sm:mb-0 overflow-hidden"
         >
+          <!-- Header -->
           <div
-            class="gap-2 min-h-0 min-w-0 bg-slate-100 flex justify-between items-center"
+            class="gap-2 min-h-0 min-w-0 bg-slate-100 flex justify-between items-center py-1"
           >
             <div class="flex gap-2 truncate items-center ml-4">
               <span class="text-xl">{{
@@ -92,6 +140,8 @@ export class ToChartDataPipe implements PipeTransform {
               <mat-icon>delete</mat-icon>
             </button>
           </div>
+
+          <!-- Chart Container -->
           <div class="overflow-hidden flex-1">
             <div
               class="h-full"
@@ -113,6 +163,13 @@ export class ToChartDataPipe implements PipeTransform {
           grid-template-columns: 240px 1fr;
         }
       }
+
+      @media (min-width: 1280px) {
+        .custom-grid {
+          grid-template-columns: 300px 1fr;
+        }
+      }
+
       .custom-grid-verticle {
         grid-template-rows: auto 1fr;
       }
@@ -120,6 +177,10 @@ export class ToChartDataPipe implements PipeTransform {
   ],
 })
 export class AppComponent implements OnInit {
+  range = new FormGroup({
+    start: new FormControl<Date | null>(null),
+    end: new FormControl<Date | null>(null),
+  });
   chartOption: EChartsOption = {
     xAxis: {
       data: [],
@@ -160,9 +221,13 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {}
 
-  addChart(name: DatasetType['name'], interval: DatasetType['interval']) {
+  addChart(
+    displayName: string,
+    name: DatasetType['name'],
+    interval: DatasetType['interval']
+  ) {
     this.charts.push({
-      displayName: 'New Chart',
+      displayName,
       dataset: {
         name,
         interval,
