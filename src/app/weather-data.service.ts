@@ -11,7 +11,7 @@ import {
 } from 'rxjs/operators';
 import { Observable, ReplaySubject } from 'rxjs';
 
-type DatasetType = {
+export type DatasetType = {
   name:
     | 'relativehumidity_2m'
     | 'direct_radiation'

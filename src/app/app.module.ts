@@ -8,6 +8,8 @@ import { AppComponent, ToChartDataPipe } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 @NgModule({
   declarations: [AppComponent, ToChartDataPipe],
@@ -17,6 +19,8 @@ import { MatTabsModule } from '@angular/material/tabs';
     BrowserAnimationsModule,
     MatTabsModule,
     HttpClientModule,
+    MatButtonModule,
+    MatIconModule,
     NgxEchartsModule.forRoot({
       /**
        * This will import all modules from echarts.
