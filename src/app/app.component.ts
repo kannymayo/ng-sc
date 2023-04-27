@@ -210,6 +210,9 @@ export class ToChartDataPipe implements PipeTransform {
   ],
 })
 export class AppComponent implements OnInit {
+  selectedIndex = 0;
+  charts: any = [];
+
   range = new FormGroup({
     start: new FormControl<Date | null>(null),
     end: new FormControl<Date | null>(null),
@@ -256,26 +259,12 @@ export class AppComponent implements OnInit {
       bottom: 30,
     },
   };
-  relativeHumidity$ = this.weatherDataService.getDataset({
-    name: 'relativehumidity_2m',
-    interval: 'hourly',
-  });
-
-  selectedIndex = 0;
-  charts = [
-    {
-      displayName: 'Relative Humidity',
-      dataset: {
-        name: 'relativehumidity_2m',
-        interval: 'hourly',
-      },
-      obs$: this.relativeHumidity$,
-    },
-  ];
 
   constructor(private weatherDataService: WeatherDataService) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.addChart('Relative Humidity', 'relativehumidity_2m', 'hourly');
+  }
 
   addChart(
     displayName: string,
