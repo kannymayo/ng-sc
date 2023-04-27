@@ -37,9 +37,6 @@ export class WeatherDataService {
   );
 
   constructor(private http: HttpClient) {
-    this.addDataset({ name: 'temperature_2m_max', interval: 'daily' });
-    this.addDataset({ name: 'temperature_2m_min', interval: 'daily' });
-
     this.store$ = this.datasets$.pipe(
       switchMap((datasets) => {
         const params = new HttpParams()

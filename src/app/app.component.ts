@@ -26,9 +26,9 @@ export class ToChartDataPipe implements PipeTransform {
   template: `
     <!-- Header -->
     <div
-      class="fixed top-0 left-0 right-0 h-16 shadow-lg bg-white text-lg pl-8 flex items-center z-10 gap-4"
+      class="fixed top-0 left-0 right-0 h-16 shadow-lg bg-white text-lg sm:pl-8 flex items-center z-10 gap-4"
     >
-      <span>Dashboard</span>
+      <span class="hidden sm:block">Dashboard</span>
       <mat-tab-group
         class=" min-w-0"
         mat-stretch-tabs="false"
@@ -57,6 +57,7 @@ export class ToChartDataPipe implements PipeTransform {
     <div
       class="from-teal-700 to-indigo-500 h-full bg-gradient-to-tl pt-16 custom-grid w-full grid relative"
     >
+      <!-- Side Panel Controls -->
       <aside
         class="bg-slate-100/50 z-10 sm:z-0 grid sm:block sm:static absolute left-0 right-0 bottom-0 h-32 sm:h-auto px-1 py-4"
       >
@@ -66,12 +67,21 @@ export class ToChartDataPipe implements PipeTransform {
       <main class=" relative">
         <!-- Floated Section -->
         <div
-          class="absolute inset-0 lg:inset-4 xl:left-16 xl:right-16 transition-all duration-300 delay-200 lg:rounded-sm bg-white grid custom-grid-verticle pb-32 sm:pb-0"
+          class="absolute inset-0 lg:inset-4 xl:left-16 xl:right-16 transition-all duration-300 delay-200 lg:rounded-sm bg-white grid custom-grid-verticle mb-32 sm:mb-0"
         >
           <div
-            class="gap-2 min-h-0 min-w-0 p-2 bg-slate-100 flex justify-between items-center"
+            class="gap-2 min-h-0 min-w-0 bg-slate-100 flex justify-between items-center"
           >
-            <span class="text-xl">{{ charts[selectedIndex].displayName }}</span>
+            <div class="flex gap-2 truncate items-center ml-4">
+              <span class="text-xl">{{
+                charts[selectedIndex].displayName
+              }}</span>
+              <mat-chip-listbox>
+                <mat-chip class="capitalize">
+                  {{ charts[selectedIndex].dataset.interval }}
+                </mat-chip>
+              </mat-chip-listbox>
+            </div>
             <button
               mat-icon-button
               color="primary"
@@ -148,21 +158,7 @@ export class AppComponent implements OnInit {
 
   constructor(private weatherDataService: WeatherDataService) {}
 
-  ngOnInit() {
-    this.weatherDataService.getDataset({
-      name: 'relativehumidity_2m',
-      interval: 'hourly',
-    });
-
-    this.weatherDataService
-      .getDataset({
-        name: 'direct_radiation',
-        interval: 'hourly',
-      })
-      .subscribe((data) => {
-        console.log('direct radiation', data);
-      });
-  }
+  ngOnInit() {}
 
   addChart(name: DatasetType['name'], interval: DatasetType['interval']) {
     this.charts.push({
@@ -179,7 +175,7 @@ export class AppComponent implements OnInit {
   }
 
   deleteChart(index: number) {
-    this.selectedIndex = this.selectedIndex - 1;
+    this.selectedIndex = this.selectedIndex === 0 ? 0 : this.selectedIndex - 1;
     this.charts.splice(index, 1);
   }
 }
