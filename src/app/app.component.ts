@@ -342,11 +342,17 @@ export class AppComponent implements OnInit {
   }
   // [reactive] [data flow] from form to chart, and data service?
   updateCharts() {
+    // full data persisted into chart
     this.charts[this.selectedIndex].chartName = this.form.value.chartName;
     this.charts[this.selectedIndex].dataset.name = this.form.value.datasetName;
     this.charts[this.selectedIndex].dataset.interval =
       this.form.value.granularity;
     this.charts[this.selectedIndex].chartType = this.form.value.chartType;
+    // server data goes to service
+    this.charts[this.selectedIndex].obs$ = this.weatherDataService.getDataset({
+      name: this.form.value.datasetName,
+      interval: this.form.value.granularity,
+    });
   }
 
   deleteChart(index: number) {
