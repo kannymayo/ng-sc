@@ -1,11 +1,22 @@
 import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { debounceTime, Observable } from 'rxjs';
 import { EChartsOption } from 'echarts';
 import { WeatherDataService, DatasetType } from './weather-data.service';
 
+type ChartType = {
+  chartName: string;
+  dataset: DatasetType;
+  chartType: 'line' | 'bar' | 'area';
+  obs$: Observable<any>;
+};
+
 @Pipe({ name: 'toChartData' })
 export class ToChartDataPipe implements PipeTransform {
-  transform(value: readonly [any, any] | null, ...args: any[]) {
+  transform(
+    value: readonly [any, any] | null,
+    chartType: ChartType['chartType']
+  ) {
     if (!value) return null;
     return {
       xAxis: {
@@ -14,11 +25,9 @@ export class ToChartDataPipe implements PipeTransform {
       },
       series: [
         {
-          type: 'line' as const,
+          type: chartType === 'area' ? 'line' : chartType,
           data: value[0],
-          areaStyle: {
-            color: '#3f51b5',
-          },
+          areaStyle: chartType === 'area' ? {} : undefined,
         },
       ],
     };
@@ -38,12 +47,13 @@ export class ToChartDataPipe implements PipeTransform {
         mat-stretch-tabs="false"
         animationDuration="0"
         color="accent"
+        (selectedTabChange)="handleTabChange($event)"
         [(selectedIndex)]="selectedIndex"
       >
         <mat-tab
           labelClass="!h-16 select-none"
           *ngFor="let chart of charts"
-          [label]="chart.displayName"
+          [label]="chart.chartName"
         ></mat-tab>
       </mat-tab-group>
       <div class=" place-self-stretch flex items-center pr-1">
@@ -173,9 +183,7 @@ export class ToChartDataPipe implements PipeTransform {
             class="gap-2 min-h-0 min-w-0 bg-slate-100 flex justify-between items-center py-1"
           >
             <div class="flex gap-2 truncate items-center ml-4">
-              <span class="text-xl">{{
-                form.controls['chartName'].value
-              }}</span>
+              <span class="text-xl">{{ form.value.chartName }}</span>
               <mat-chip-listbox>
                 <mat-chip class="capitalize">
                   {{ charts[selectedIndex].dataset.interval }}
@@ -199,7 +207,11 @@ export class ToChartDataPipe implements PipeTransform {
               class="h-full"
               echarts
               [options]="chartOption"
-              [merge]="charts[selectedIndex].obs$ | async | toChartData"
+              [merge]="
+                charts[selectedIndex].obs$
+                  | async
+                  | toChartData : form.value.chartType
+              "
             ></div>
           </div>
         </div>
@@ -230,7 +242,8 @@ export class ToChartDataPipe implements PipeTransform {
 })
 export class AppComponent implements OnInit {
   selectedIndex = 0;
-  charts: any = [];
+  // charts store client and server meta data
+  charts: ChartType[] = [];
   form: FormGroup = this.fb.group({
     chartName: ['', Validators.required],
     datasetName: ['', Validators.required],
@@ -291,38 +304,57 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.addChart('Relative Humidity', 'relativehumidity_2m', 'hourly');
+    this.form.valueChanges.pipe(debounceTime(100)).subscribe((value) => {
+      this.updateCharts();
+    });
   }
 
   addChart(
-    displayName: string,
-    name: DatasetType['name'],
-    interval: DatasetType['interval']
+    chartName: string,
+    datasetName: DatasetType['name'],
+    granularity: DatasetType['interval'],
+    chartType: ChartType['chartType'] = 'line'
   ) {
     this.charts.push({
-      displayName,
+      chartName,
       dataset: {
-        name,
-        interval,
+        name: datasetName,
+        interval: granularity,
       },
+      chartType,
       obs$: this.weatherDataService.getDataset({
-        name,
-        interval,
+        name: datasetName,
+        interval: granularity,
       }),
     });
     this.selectChart(this.charts.length - 1);
   }
 
+  // [one-off] [data flow] from chart to form
   selectChart(index: number) {
     this.selectedIndex = index;
     this.form.patchValue({
-      chartName: this.charts[index].displayName,
+      chartName: this.charts[index].chartName,
       datasetName: this.charts[index].dataset.name,
       granularity: this.charts[index].dataset.interval,
+      chartType: this.charts[index].chartType,
     });
+  }
+  // [reactive] [data flow] from form to chart, and data service?
+  updateCharts() {
+    this.charts[this.selectedIndex].chartName = this.form.value.chartName;
+    this.charts[this.selectedIndex].dataset.name = this.form.value.datasetName;
+    this.charts[this.selectedIndex].dataset.interval =
+      this.form.value.granularity;
+    this.charts[this.selectedIndex].chartType = this.form.value.chartType;
   }
 
   deleteChart(index: number) {
     this.charts.splice(index, 1);
     this.selectChart(this.selectedIndex === 0 ? 0 : this.selectedIndex - 1);
+  }
+
+  handleTabChange(e: any) {
+    this.selectChart(e.index);
   }
 }
