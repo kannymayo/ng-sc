@@ -15,7 +15,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
+import { MatNativeDateModule, MatOptionModule } from '@angular/material/core';
 
 @NgModule({
   declarations: [AppComponent, ToChartDataPipe],
@@ -34,6 +35,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatButtonToggleModule,
     MatDatepickerModule,
     MatNativeDateModule,
+    MatSelectModule,
     NgxEchartsModule.forRoot({
       /**
        * This will import all modules from echarts.

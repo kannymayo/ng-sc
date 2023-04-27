@@ -16,6 +16,9 @@ export class ToChartDataPipe implements PipeTransform {
         {
           type: 'line' as const,
           data: value[0],
+          areaStyle: {
+            color: '#3f51b5',
+          },
         },
       ],
     };
@@ -60,55 +63,85 @@ export class ToChartDataPipe implements PipeTransform {
     >
       <!-- Side Panel Controls -->
       <aside
-        class="bg-slate-100/50 z-10 sm:z-0 flex sm:flex-col flex-wrap sm:flex-nowrap gap-y-4 sm:static absolute left-0 right-0 bottom-0 h-48 sm:h-auto px-1 py-4 overflow-x-hidden overflow-y-auto xl:px-4"
+        class="bg-slate-100/50 z-10 sm:z-0 sm:static absolute left-0 right-0 bottom-0 h-48 sm:h-auto px-1 py-4 overflow-x-hidden overflow-y-auto xl:px-4"
       >
-        <!-- Chart Name -->
-        <mat-form-field class="w-full">
-          <mat-label>Chart Name</mat-label>
-          <input
-            matInput
-            placeholder="Ex. Pizza"
-            [(ngModel)]="charts[selectedIndex].displayName"
-          />
-        </mat-form-field>
-
-        <!-- Date Range -->
-        <mat-form-field class="w-full" appearance="fill">
-          <mat-label>Enter a date range</mat-label>
-          <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+        <form class="sm:flex-col flex-wrap flex sm:flex-nowrap gap-y-2">
+          <!-- Chart Name -->
+          <mat-form-field class="w-full">
+            <mat-label>Chart Name</mat-label>
             <input
-              matStartDate
-              formControlName="start"
-              placeholder="Start date"
+              matInput
+              placeholder="Ex. Pizza"
+              [(ngModel)]="charts[selectedIndex].displayName"
+              name="chartName"
             />
-            <input matEndDate formControlName="end" placeholder="End date" />
-          </mat-date-range-input>
-          <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
-          <mat-datepicker-toggle
-            matIconSuffix
-            [for]="picker"
-          ></mat-datepicker-toggle>
-          <mat-date-range-picker #picker></mat-date-range-picker>
+          </mat-form-field>
 
-          <mat-error
-            *ngIf="range.controls.start.hasError('matStartDateInvalid')"
-            >Invalid start date</mat-error
-          >
-          <mat-error *ngIf="range.controls.end.hasError('matEndDateInvalid')"
-            >Invalid end date</mat-error
-          >
-        </mat-form-field>
+          <!-- Dataset -->
+          <mat-form-field class="w-full" appearance="fill">
+            <mat-label>Dataset</mat-label>
+            <mat-select [(ngModel)]="seletedDatasetName" name="datasetName">
+              <mat-option
+                *ngFor="let dsName of datasetNames"
+                [value]="dsName.value"
+              >
+                {{ dsName.viewValue }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
 
-        <p>Selected range: {{ range.value | json }}</p>
+          <!--  -->
+          <mat-form-field class="w-full" appearance="fill">
+            <mat-label>Chart Type</mat-label>
+            <mat-select [(ngModel)]="selectedChartType" name="chartType">
+              <mat-option *ngFor="let ct of chartTypes" [value]="ct.value">
+                {{ ct.viewValue }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
 
-        <!-- Data Granularity -->
-        <div class="flex flex-wrap gap-1 items-center justify-between">
-          <span class="text-base py-1">Granularity:</span>
-          <mat-button-toggle-group class=" " name="fontStyle">
-            <mat-button-toggle value="bold">Day</mat-button-toggle>
-            <mat-button-toggle value="italic">Hour</mat-button-toggle>
-          </mat-button-toggle-group>
-        </div>
+          <!-- Date Range -->
+          <mat-form-field class="w-full" appearance="fill">
+            <mat-label>Enter a date range</mat-label>
+            <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+              <input
+                matStartDate
+                formControlName="start"
+                placeholder="Start date"
+              />
+              <input matEndDate formControlName="end" placeholder="End date" />
+            </mat-date-range-input>
+            <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+            <mat-datepicker-toggle
+              matIconSuffix
+              [for]="picker"
+            ></mat-datepicker-toggle>
+            <mat-date-range-picker #picker></mat-date-range-picker>
+
+            <mat-error
+              *ngIf="range.controls.start.hasError('matStartDateInvalid')"
+              >Invalid start date</mat-error
+            >
+            <mat-error *ngIf="range.controls.end.hasError('matEndDateInvalid')"
+              >Invalid end date</mat-error
+            >
+          </mat-form-field>
+
+          <!-- Data Granularity -->
+          <div class="flex flex-wrap gap-1 items-center justify-between">
+            <span class="text-base py-1">Granularity:</span>
+            <mat-button-toggle-group
+              [(ngModel)]="selectedGranularity"
+              name="granularity"
+            >
+              <mat-button-toggle
+                *ngFor="let g of granularities"
+                [value]="g.value"
+                >{{ g.viewValue }}</mat-button-toggle
+              >
+            </mat-button-toggle-group>
+          </div>
+        </form>
       </aside>
 
       <main class=" relative">
@@ -160,13 +193,13 @@ export class ToChartDataPipe implements PipeTransform {
     `
       @media (min-width: 640px) {
         .custom-grid {
-          grid-template-columns: 240px 1fr;
+          grid-template-columns: 250px 1fr;
         }
       }
 
       @media (min-width: 1280px) {
         .custom-grid {
-          grid-template-columns: 300px 1fr;
+          grid-template-columns: 320px 1fr;
         }
       }
 
@@ -181,16 +214,39 @@ export class AppComponent implements OnInit {
     start: new FormControl<Date | null>(null),
     end: new FormControl<Date | null>(null),
   });
+
+  seletedDatasetName = null;
+  datasetNames = [
+    { value: 'relativehumidity_2m', viewValue: 'Rel. Humidity' },
+    { value: 'temperature_2m_max', viewValue: 'Max Temperature' },
+    { value: 'temperature_2m_min', viewValue: 'Min Temperature' },
+    { value: 'direct_radiation', viewValue: 'Direct Radiation' },
+  ];
+  selectedChartType = 'line';
+  chartTypes = [
+    { value: 'line', viewValue: 'Line' },
+    { value: 'bar', viewValue: 'Bar' },
+    { value: 'area', viewValue: 'Area' },
+  ];
+
+  selectedGranularity = 'daily';
+  granularities = [
+    {
+      value: 'daily',
+      viewValue: 'Day',
+    },
+    {
+      value: 'hourly',
+      viewValue: 'Hour',
+    },
+  ];
+
   chartOption: EChartsOption = {
     xAxis: {
       data: [],
     },
     yAxis: {},
-    series: [
-      {
-        type: 'bar',
-      },
-    ],
+    series: [],
     tooltip: {
       trigger: 'axis',
     },
@@ -237,6 +293,7 @@ export class AppComponent implements OnInit {
         interval,
       }),
     });
+    this.selectedIndex = this.charts.length - 1;
   }
 
   deleteChart(index: number) {
