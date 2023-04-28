@@ -8,6 +8,10 @@ type ChartType = {
   chartName: string;
   dataset: DatasetType;
   chartType: 'line' | 'bar' | 'area';
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
   obs$: Observable<any>;
 };
 
@@ -41,7 +45,9 @@ export class ToChartDataPipe implements PipeTransform {
     <div
       class="fixed top-0 left-0 right-0 h-16 shadow-lg bg-white text-lg sm:pl-8 flex items-center z-10 gap-4"
     >
-      <span class="hidden sm:block">Dashboard</span>
+      <a class="hidden sm:flex place-self-stretch items-center" href="/"
+        >Dashboard</a
+      >
       <mat-tab-group
         class=" min-w-0"
         mat-stretch-tabs="false"
@@ -71,9 +77,9 @@ export class ToChartDataPipe implements PipeTransform {
     <div
       class="from-teal-700 to-indigo-500 h-full bg-gradient-to-br pt-16 custom-grid w-full grid relative"
     >
-      <!-- Side Panel Controls -->
+      <!-- Side Panel Controls. On The Bottom When Mobile  -->
       <aside
-        class="bg-slate-100/50 z-10 sm:z-0 sm:static absolute left-0 right-0 bottom-0 h-48 sm:h-auto px-1 py-4 overflow-x-hidden overflow-y-auto xl:px-4"
+        class="sm:bg-slate-100/50 bg-slate-300 sm:border-0 border-t-2 border-slate-600 z-10 sm:z-0 sm:static absolute left-0 right-0 bottom-0 h-48 sm:h-auto px-1 py-4 overflow-x-hidden overflow-y-auto xl:px-4"
       >
         <form
           [formGroup]="form"
@@ -93,17 +99,20 @@ export class ToChartDataPipe implements PipeTransform {
           <!-- Dataset -->
           <mat-form-field class="w-full" appearance="fill">
             <mat-label>Dataset</mat-label>
-            <mat-select formControlName="datasetName" name="datasetName">
+            <mat-select
+              formControlName="dataset"
+              [compareWith]="optionsIdentityFn"
+            >
               <mat-option
-                *ngFor="let dsName of datasetNames"
-                [value]="dsName.value"
+                *ngFor="let dataset of datasets"
+                [value]="dataset.value"
               >
-                {{ dsName.viewValue }}
+                {{ dataset.viewValue }}
               </mat-option>
             </mat-select>
           </mat-form-field>
 
-          <!--  -->
+          <!-- Chart Types -->
           <mat-form-field class="w-full" appearance="fill">
             <mat-label>Chart Type</mat-label>
             <mat-select formControlName="chartType" name="chartType">
@@ -155,21 +164,6 @@ export class ToChartDataPipe implements PipeTransform {
               >Invalid end date</mat-error
             >
           </mat-form-field>
-
-          <!-- Data Granularity -->
-          <div class="flex flex-wrap gap-1 items-center justify-between">
-            <span class="text-base py-1">Granularity:</span>
-            <mat-button-toggle-group
-              formControlName="granularity"
-              name="granularity"
-            >
-              <mat-button-toggle
-                *ngFor="let g of granularities"
-                [value]="g.value"
-                >{{ g.viewValue }}</mat-button-toggle
-              >
-            </mat-button-toggle-group>
-          </div>
         </form>
       </aside>
 
@@ -183,10 +177,10 @@ export class ToChartDataPipe implements PipeTransform {
             class="gap-2 min-h-0 min-w-0 bg-slate-100 flex justify-between items-center py-1"
           >
             <div class="flex gap-2 truncate items-center ml-4">
-              <span class="text-xl">{{ form.value.chartName }}</span>
+              <span class="text-xl">{{ charts[selectedIndex].chartName }}</span>
               <mat-chip-listbox>
                 <mat-chip class="capitalize">
-                  {{ charts[selectedIndex].dataset.interval }}
+                  {{ charts[selectedIndex].dataset.granularity }}
                 </mat-chip>
               </mat-chip-listbox>
             </div>
@@ -246,55 +240,60 @@ export class AppComponent implements OnInit {
   charts: ChartType[] = [];
   form: FormGroup = this.fb.group({
     chartName: ['', Validators.required],
-    datasetName: ['', Validators.required],
+    dataset: ['', Validators.required],
     chartType: ['', Validators.required],
-    granularity: ['', Validators.required],
     dateRange: this.fb.group({
       start: [null, Validators.required],
       end: [null, Validators.required],
     }),
   });
 
-  seletedDatasetName = null;
-  datasetNames = [
-    { value: 'relativehumidity_2m', viewValue: 'Relative Humidity' },
-    { value: 'temperature_2m_max', viewValue: 'Max Temperature' },
-    { value: 'temperature_2m_min', viewValue: 'Min Temperature' },
-    { value: 'direct_radiation', viewValue: 'Direct Radiation' },
+  datasets = [
+    {
+      value: {
+        granularity: 'hourly',
+        id: 'relativehumidity_2m',
+      },
+      viewValue: 'Relative Humidity',
+    },
+    {
+      value: {
+        granularity: 'daily',
+        id: 'temperature_2m_max',
+      },
+      viewValue: 'Max Temperature',
+    },
+    {
+      value: {
+        granularity: 'daily',
+        id: 'temperature_2m_min',
+      },
+      viewValue: 'Min Temperature',
+    },
+    {
+      value: {
+        granularity: 'hourly',
+        id: 'direct_radiation',
+      },
+      viewValue: 'Direct Radiation',
+    },
   ];
-  selectedChartType = 'line';
   chartTypes = [
     { value: 'line', viewValue: 'Line' },
     { value: 'bar', viewValue: 'Bar' },
     { value: 'area', viewValue: 'Area' },
   ];
-
-  selectedGranularity = 'daily';
   granularities = [
-    {
-      value: 'daily',
-      viewValue: 'Day',
-    },
-    {
-      value: 'hourly',
-      viewValue: 'Hour',
-    },
+    { value: 'daily', viewValue: 'Day' },
+    { value: 'hourly', viewValue: 'Hour' },
   ];
 
   chartOption: EChartsOption = {
-    xAxis: {
-      data: [],
-    },
+    xAxis: { data: [] },
     yAxis: {},
     series: [],
-    tooltip: {
-      trigger: 'axis',
-    },
-    grid: {
-      left: 60,
-      right: 10,
-      bottom: 30,
-    },
+    tooltip: { trigger: 'axis' },
+    grid: { left: 60, right: 10, bottom: 30 },
   };
 
   constructor(
@@ -303,7 +302,10 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.addChart('Relative Humidity', 'relativehumidity_2m', 'hourly');
+    this.addChart('Relative Humidity', 'relativehumidity_2m', 'hourly', 'bar');
+    this.addChart('Max Temperature', 'temperature_2m_max', 'daily', 'line');
+    this.addChart('Min Temperature', 'temperature_2m_min', 'daily', 'line');
+    this.addChart('Direct Radiation', 'direct_radiation', 'hourly', 'area');
     this.form.valueChanges.pipe(debounceTime(100)).subscribe((value) => {
       this.updateCharts();
     });
@@ -311,48 +313,71 @@ export class AppComponent implements OnInit {
 
   addChart(
     chartName: string,
-    datasetName: DatasetType['name'],
-    granularity: DatasetType['interval'],
-    chartType: ChartType['chartType'] = 'line'
+    id: DatasetType['id'],
+    granularity: DatasetType['granularity'],
+    chartType: ChartType['chartType'] = 'line',
+    start: Date = new Date(2023, 0, 1),
+    end: Date = new Date(2023, 0, 10)
   ) {
     this.charts.push({
       chartName,
-      dataset: {
-        name: datasetName,
-        interval: granularity,
-      },
+      dataset: { id, granularity },
       chartType,
-      obs$: this.weatherDataService.getDataset({
-        name: datasetName,
-        interval: granularity,
-      }),
+      dateRange: { start, end },
+      obs$: this.weatherDataService.getDataset(
+        { id, granularity },
+        { start, end }
+      ),
     });
     this.selectChart(this.charts.length - 1);
   }
 
-  // [one-off] [data flow] from chart to form
+  // [data flow] from chart to form [one-off]
   selectChart(index: number) {
     this.selectedIndex = index;
+    const curChart = this.charts[index];
+
     this.form.patchValue({
-      chartName: this.charts[index].chartName,
-      datasetName: this.charts[index].dataset.name,
-      granularity: this.charts[index].dataset.interval,
-      chartType: this.charts[index].chartType,
+      chartName: curChart.chartName,
+      dataset: curChart.dataset,
+      chartType: curChart.chartType,
+      dateRange: {
+        start: curChart.dateRange.start,
+        end: curChart.dateRange.end,
+      },
     });
   }
-  // [reactive] [data flow] from form to chart, and data service?
+  // [data flow] from form to chart, and data service? [reactive]
   updateCharts() {
+    const curChart = this.charts[this.selectedIndex];
+    const formState = this.form.value;
     // full data persisted into chart
-    this.charts[this.selectedIndex].chartName = this.form.value.chartName;
-    this.charts[this.selectedIndex].dataset.name = this.form.value.datasetName;
-    this.charts[this.selectedIndex].dataset.interval =
-      this.form.value.granularity;
-    this.charts[this.selectedIndex].chartType = this.form.value.chartType;
+    curChart.chartName = formState.chartName;
+    curChart.dataset = formState.dataset;
+    curChart.chartType = formState.chartType;
+    if (formState.dateRange.start && formState.dateRange.end) {
+      // had to do this sync until data service can handle independent date
+      // range
+      this.charts.forEach((chart) => {
+        chart.dateRange = {
+          start: formState.dateRange.start,
+          end: formState.dateRange.end,
+        };
+      });
+    }
     // server data goes to service
-    this.charts[this.selectedIndex].obs$ = this.weatherDataService.getDataset({
-      name: this.form.value.datasetName,
-      interval: this.form.value.granularity,
-    });
+    if (formState.dateRange.start && formState.dateRange.end) {
+      curChart.obs$ = this.weatherDataService.getDataset(
+        {
+          id: formState.dataset.id,
+          granularity: curChart.dataset.granularity,
+        },
+        {
+          start: this.form.value.dateRange.start,
+          end: this.form.value.dateRange.end,
+        }
+      );
+    }
   }
 
   deleteChart(index: number) {
@@ -363,4 +388,6 @@ export class AppComponent implements OnInit {
   handleTabChange(e: any) {
     this.selectChart(e.index);
   }
+
+  optionsIdentityFn = (a: any, b: any) => a.id === b.id;
 }
